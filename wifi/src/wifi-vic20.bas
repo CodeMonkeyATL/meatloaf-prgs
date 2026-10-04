@@ -1,8 +1,9 @@
 10 dr=peek(250):if dr > 15 then dr=peek(186)
-20 open1,30,15:s=peek(144):close1:rh=(s<>0): rem print rh
-30 gosub20100
-40 print chr$(147);chr$(142);
-50 gosub10000
+20 if dr=0thendr=30
+30 open1,dr,15:s=peek(144):close1:rh=(s<>0): rh=1
+40 gosub20100
+50 print chr$(147);chr$(142);
+60 gosub10000
 
 200 bi$=" choose your option"
 210 bc=1:gosub20000
@@ -31,27 +32,27 @@
 
 3000 if rh then 3020
 3010 sc$="testssid":return
-3020 open1,30,15,"getssid":input#1,sc$:close1:return
+3020 open1,dr,15,"getssid":input#1,sc$:close1:return
 
 3050 if rh then 3070
 3060 return
-3070 open1,30,15,"setssid:"+sn$+","+pn$:close1:return
+3070 open1,dr,15,"setssid:"+sn$+","+pn$:close1:return
 
 3100 if rh then 3120
 3110 ip$="12.12.12.12":return
-3120 open1,30,15,"localip":input#1,ip$:close1:return
+3120 open1,dr,15,"localip":input#1,ip$:close1:return
 
 3150 bi$="meatloaf reset:":bc=1:gosub20000
 3160 bi$="  command sent":bc=4:gosub20000:return
 
 3200 if rh then 3220
 3210 s=5:return
-3220 open1,30,15,"scan":input#1,s:close1:return
+3220 open1,dr,15,"scan":input#1,s:close1:return
 
 3250 if rh then 3280
 3260 z$="scanresult,"+str$(x)
 3270 s$="access-point<"+str$(x)+">":return
-3280 open1,30,15,z$:input#1,r$,s$:close1:return
+3280 open1,dr,15,z$:input#1,r$,s$:close1:return
 
 3300 if rh then 3320
 3310 em$="v1.2.3":return
@@ -78,7 +79,9 @@
 4220 bi$="   "+ip$:bc=4:gosub20000:return
 
 4300 gosub3300:bi$="fw version:":bc=1:gosub20000
-4320 bi$=em$:bc=4:gosub20000:return
+4320 iflen(em$)<=19thenbi$=em$:goto4340
+4335 bi$=chr$(95)+right$(em$,19)
+4340 bc=4:gosub20000:return
 
 4400 bi$="scanning wifi aps...":bc=2:gosub20000
 4420 gosub3200:print"{reverse off}{red}";:forx=0tos:gosub3250:prints$:next:print"{blu}"
