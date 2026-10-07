@@ -1,0 +1,85 @@
+name: build prg from bas
+
+on:
+  pull_request:
+    types: [closed]
+
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    # Run on merged PRs OR on release tags
+    if: github.event.pull_request.merged == true || startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: install petcat
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y vice
+
+      - name: determine bas files
+        id: basfiles
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # Only changed files for PR merges
+            files=$(git diff --name-only HEAD~1 HEAD | grep '\.bas$' || true)
+          else
+            # For release tags: build ALL bas files
+            files=$(git ls-files '*.bas')
+          fi
+          echo "files=$files" >> $GITHUB_OUTPUT
+
+      - name: build prg files
+        if: ${{ steps.basfiles.outputs.files != '' }}
+        run: |
+          mkdir -p prgs
+          for f in ${{ steps.basfiles.outputs.files }}; do
+            base=$(basename "$f" .bas)
+
+            case "$f" in
+              *-vic20.bas)       flags="-w2 --vic20" ;;
+              *-vic20-8k.bas)    flags="-w2 --vic20-8k" ;;
+              *-vic20-16k.bas)   flags="-w2 --vic20-16k" ;;
+              *-c64.bas)         flags="-w2 --c64" ;;
+              *-c128.bas)        flags="-w2 --c128" ;;
+              *-mega65.bas)      flags="-w2 --mega65" ;;
+              *-x16.bas)         flags="-w2 --cx16" ;;
+              *-plain.bas)       flags="-w2" ;;
+              *)                 flags="-w2" ;;  # fallback
+            esac
+
+            echo "Building $f with flags: $flags"
+            petcat $flags -o "prgs/${base}.prg" "$f"
+          done
+
+      - name: commit prg files
+        if: ${{ steps.basfiles.outputs.files != '' }}
+        run: |
+          git config user.name "CodeMonkeyATL-github-actions"
+          git config user.email "ci@users.noreply.github.com"
+          git add prgs/*.prg
+          git commit -m "auto-build prg from bas"
+          git push
+
+      - name: comment on PR
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request' && steps.basfiles.outputs.files != ''
+        with:
+          script: |
+            const files = "${{ steps.basfiles.outputs.files }}".split(" ");
+            const pr = context.payload.pull_request.number;
+            const body = `Auto-build completed:\n\n${files.map(f => `- ${f}`).join("\n")}`;
+            github.rest.issues.createComment({
+              issue_number: pr,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body
+            });
