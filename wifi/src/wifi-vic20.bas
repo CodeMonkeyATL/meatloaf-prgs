@@ -107,8 +107,7 @@
 4725 bc=4:gosub20000
 4750 return
 
-10000 rem 
-10001 l$=chr$(223):r$=chr$(233):sp$="                      "
+10000 l$=chr$(223):r$=chr$(233):sp$="                      "
 10010 printchr$(147);"{blk}";:bt=0
 10020 rem 
 10030 bi$=l$+"{reverse on}   {reverse off}"+r$+"{reverse on}{cyan} {blk}{reverse off}"
