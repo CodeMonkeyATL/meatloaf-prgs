@@ -10,7 +10,6 @@ on:
 
 jobs:
   build:
-    # Run on merged PRs OR on release tags
     if: github.event.pull_request.merged == true || startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
 
@@ -20,19 +19,25 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: install petcat
+      - name: install petcat (cached)
         run: |
-          sudo apt-get update
-          sudo apt-get install -y vice
+          sudo cp tools/petcat /usr/local/bin/petcat
+          sudo chmod +x /usr/local/bin/petcat
+          petcat --help
+          petcat --version
+
+      - name: get petcat version
+        id: petcatver
+        run: |
+          ver=$(petcat --version)
+          echo "ver=$ver" >> $GITHUB_OUTPUT
 
       - name: determine bas files
         id: basfiles
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            # Only changed files for PR merges
             files=$(git diff --name-only HEAD~1 HEAD | grep '\.bas$' || true)
           else
-            # For release tags: build ALL bas files
             files=$(git ls-files '*.bas')
           fi
           echo "files=$files" >> $GITHUB_OUTPUT
@@ -53,7 +58,7 @@ jobs:
               *-mega65.bas)      flags="-w2 --mega65" ;;
               *-x16.bas)         flags="-w2 --cx16" ;;
               *-plain.bas)       flags="-w2" ;;
-              *)                 flags="-w2" ;;  # fallback
+              *)                 flags="-w2" ;;
             esac
 
             echo "Building $f with flags: $flags"
@@ -75,8 +80,9 @@ jobs:
         with:
           script: |
             const files = "${{ steps.basfiles.outputs.files }}".split(" ");
+            const ver = "${{ steps.petcatver.outputs.ver }}";
             const pr = context.payload.pull_request.number;
-            const body = `Auto-build completed:\n\n${files.map(f => `- ${f}`).join("\n")}`;
+            const body = `Auto-build completed using ${ver}:\n\n${files.map(f => `- ${f}`).join("\n")}`;
             github.rest.issues.createComment({
               issue_number: pr,
               owner: context.repo.owner,
