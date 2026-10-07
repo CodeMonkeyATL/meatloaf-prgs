@@ -1,9 +1,12 @@
 name: build prg from bas
 
+permissions:
+  contents: write
+  pull-requests: write
+
 on:
   pull_request:
     types: [closed]
-
   push:
     tags:
       - 'v*'
@@ -24,6 +27,7 @@ jobs:
         run: |
           sudo cp tools/petcat /usr/local/bin/petcat
           sudo chmod +x /usr/local/bin/petcat
+          echo "petcat installed"
 
       - name: determine bas files
         id: basfiles
@@ -38,9 +42,12 @@ jobs:
       - name: build prg files
         if: ${{ steps.basfiles.outputs.files != '' }}
         run: |
-          mkdir -p prgs
           for f in ${{ steps.basfiles.outputs.files }}; do
             base=$(basename "$f" .bas)
+            dir=$(dirname "$f")
+            outdir="$dir/../prg_files"
+
+            mkdir -p "$outdir"
 
             case "$f" in
               *-vic20.bas)       flags="-w2 --vic20" ;;
@@ -54,8 +61,8 @@ jobs:
               *)                 flags="-w2" ;;
             esac
 
-            echo "Building $f with flags: $flags"
-            petcat $flags -o "prgs/${base}.prg" "$f"
+            echo "Building $f → $outdir/${base}"
+            petcat $flags -o "$outdir/${base}" "$f"
           done
 
       - name: commit prg files
@@ -63,22 +70,6 @@ jobs:
         run: |
           git config user.name "CodeMonkeyATL-github-actions"
           git config user.email "ci@users.noreply.github.com"
-          git add prgs/*.prg
+          git add */prg_files/* || true
           git commit -m "auto-build prg from bas" || echo "no changes to commit"
-          git push
-
-      - name: comment on PR
-        uses: actions/github-script@v7
-        if: github.event_name == 'pull_request' && steps.basfiles.outputs.files != ''
-        with:
-          script: |
-            const files = "${{ steps.basfiles.outputs.files }}".split(" ");
-            const ver = "${{ steps.petcatver.outputs.ver }}";
-            const pr = context.payload.pull_request.number;
-            const body = `Auto-build completed using ${ver}:\n\n${files.map(f => `- ${f}`).join("\n")}`;
-            github.rest.issues.createComment({
-              issue_number: pr,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body
-            });
+          git push || echo "nothing to push"
