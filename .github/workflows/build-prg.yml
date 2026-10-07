@@ -28,7 +28,7 @@ jobs:
         id: basfiles
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            files=$(git diff --name-only HEAD~1 HEAD | grep '\.bas$' || true)
+            files=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | grep '\.bas$' || true)
           else
             files=$(git ls-files '*.bas')
           fi
