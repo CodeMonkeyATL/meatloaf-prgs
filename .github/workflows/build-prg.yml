@@ -24,12 +24,6 @@ jobs:
           sudo cp tools/petcat /usr/local/bin/petcat
           sudo chmod +x /usr/local/bin/petcat
 
-      - name: get petcat version
-        id: petcatver
-        run: |
-          ver=$(petcat --version)
-          echo "ver=$ver" >> $GITHUB_OUTPUT
-
       - name: determine bas files
         id: basfiles
         run: |
