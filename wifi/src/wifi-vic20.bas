@@ -1,11 +1,11 @@
 10 dr=peek(250):if dr > 15 then dr=peek(186)
 20 if dr=0thendr=30
-30 open1,dr,15:s=peek(144):close1:rh=(s<>0): rh=1
+30 rh=1
 40 gosub20100
 50 print chr$(147);chr$(142);
 60 gosub10000
 
-200 bi$=" choose your option"
+200 x=fre(0):bi$=" choose your option"
 210 bc=1:gosub20000
 220 bi$=left$(sp$,3)+"w g i s f r q ?"
 230 bc=4:gosub20000
@@ -49,9 +49,9 @@
 3210 s=5:return
 3220 open1,dr,15,"scan":input#1,s:close1:return
 
-3250 if rh then 3280
-3260 z$="scanresult,"+str$(x)
-3270 s$="access-point<"+str$(x)+">":return
+3250 if rh then 3270
+3260 s$="access-point<"+str$(x)+">":return
+3270 z$="scanresult,"+str$(x)
 3280 open1,dr,15,z$:input#1,r$,s$:close1:return
 
 3300 if rh then 3320
