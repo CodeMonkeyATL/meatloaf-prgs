@@ -23,7 +23,7 @@ jobs:
         run: |
           sudo cp tools/petcat /usr/local/bin/petcat
           sudo chmod +x /usr/local/bin/petcat
-          petcat --help
+          petcat -help
           petcat --version
 
       - name: get petcat version
